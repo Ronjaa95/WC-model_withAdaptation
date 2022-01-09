@@ -1,0 +1,9 @@
+include requirements.txt
+include neurolib/models/aln/aln-precalc/quantities_cascade.h5
+include neurolib/utils/pypet_logging.ini
+
+# datasets
+# recursive-include neurolib/data *
+
+recursive-include neurolib/data/datasets/hcp *
+recursive-include neurolib/data/datasets/gw *
