@@ -99,6 +99,60 @@ class Bistability:
                 
         return exc, s_c
     
+    def upDownBistability(self):
+        
+        
+        self.model.params['step_current'] = True
+        
+        
+        self.model.params['neg_from_second'] = 120
+        self.model.params['neg_to_second'] = 110
+        self.model.params['neg_ext_val'] = -10
+        
+        self.model.params['from_second'] = 60
+        self.model.params['to_second'] = 50
+        self.model.params['ext_val'] = 10
+        
+        self.model.params['duration'] = 125*1000
+        
+        self.model.run()
+        
+        exc = self.model.exc
+        inh = self.model.inh
+        adap=self.model.adap
+        
+        s_c = self.model.step_current     
+        
+        
+        down = exc[:,-int(71*10000):-int(61*10000)]
+        
+        up = exc[:,-int(11*10000):-int(1*10000)]
+        
+        
+        self.tuples = []
+        
+        for k in range(len(down)):
+            down_state = (down[k] >= 0.2).astype(int)
+            up_state = (up[k] >= 0.2).astype(int)
+            if all(down_state):
+                down_state=1
+            else:
+                down_state=0
+                
+            if all(up_state):
+                up_state=1
+            else:
+                up_state=0
+                
+            self.tuples.append((up_state,down_state))
+            
+            if down_state != up_state:
+                self.bistable.append(1)
+            else: 
+                self.bistable.append(0)
+                
+        return exc, adap, s_c
+    
     
     def testBistability_long(self):
         
