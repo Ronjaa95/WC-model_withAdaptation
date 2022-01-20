@@ -1,8 +1,4 @@
 #import necessary packages
-import matplotlib
-
-import matplotlib.pyplot as plt
-import matplotlib.axes as ax
 import pandas as pd
 import numpy as np
 import glob
@@ -12,8 +8,6 @@ import sys
 
 import scipy
 from scipy import signal
-from scipy.stats import binned_statistic
-
 
 from neurolib.models.wc-adap import WCModel
 
@@ -22,7 +16,6 @@ from Bistability import Bistability
 
 from neurolib.utils.parameterSpace import ParameterSpace
 from neurolib.optimize.exploration import BoxSearch
-from neurolib.utils.signal import Signal
 
 class Derivations:
     
