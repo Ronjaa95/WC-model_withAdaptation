@@ -71,6 +71,7 @@ class Derivations:
     
     
     def getStatesInvolvementDistribution(self, states, involvement, nbins=10):
+        """"written by https://github.com/caglorithm"""
         invs = {0: [], 1: []}
         lens = {0: [], 1: []}
         for s in states[:]:
@@ -134,6 +135,7 @@ class Derivations:
     
     
     def filter_long_states(self, states, dur=25):
+        """written by https://github.com/caglorithm"""
         states = states.copy()
         LENGTH_THRESHOLD = int(dur / self.model.params["dt"])  # ms
        # for s in states:
@@ -301,13 +303,14 @@ class Derivations:
         oss = [self.checkOneOsc(xss) for xss in x]
         return oss
     
-   # # # # - - - -  DataFrame COMPUTATIONS - ÜBERHOLT (!) Diese Berechnungen wurde neu aufgelegt und dienen nur als template - - - - # # # #
+   # # # # - - - -  DataFrame COMPUTATIONS - Diese Berechnungen wurde neu aufgelegt und dienen nur als template - - - - # # # #
+# # # # Sie sind allerdings korrigiert worden, aber nicht nochmal gelaufen. Dementsprechend könnten Tippfehler im Code sein. # # # #
     
     def deriveMulti(self, traj): 
         
         
         paras = self.search.getParametersFromTraj(traj)
-        
+    
         self.model.params['exc_ext'] = paras['exc_ext']
         self.model.params['inh_ext'] = paras['inh_ext']
         
@@ -323,21 +326,19 @@ class Derivations:
         
         self.model.run()
         
-        max_exc = np.max(self.model.exc[:, -int(1000/self.model.params['dt']):])
-        max_inh = np.max(self.model.inh[:, -int(1000/self.model.params['dt']):])
-        min_exc = np.min(self.model.exc[:, -int(1000/self.model.params['dt']):])
-        min_inh = np.min(self.model.inh[:, -int(1000/self.model.params['dt']):])
+        max_exc = np.max(self.model.exc[:, -int(5000/self.model.params['dt']):])
+        max_inh = np.max(self.model.inh[:, -int(5000/self.model.params['dt']):])
         
         exc_act = self.model.exc
         inh_act = self.model.inh
         adap_act = self.model.adap
         
         duration = self.model.params.duration/self.model.params.dt
-        cut_off = int(duration - 10*10000)
+        cut_off = int(duration - 60*10000)
         
         x = exc_act[:, -cut_off:]
         x_adap = adap_act[:, -cut_off:]
-        oss = self.checkMultiOsc(x)
+        oss = self..checkMultiOsc(x)
         if any(oss):
             oss_general = True
         else: 
@@ -346,27 +347,49 @@ class Derivations:
         LCEI = 0
         LCaE = 0
         
-        ### Derive all values that you need ###
+        if oss_general:
+            dominant_frequencies = []
+            adap_frequ = []
             
-        
+            frequencies, psd =  signal.welch(x, 10000, window='hanning', nperseg=int(60000), scaling='spectrum')
+            
+            
+            idx_dominant_frequ = np.argmax(np.sum(psd,axis=0)) 
+            domfrequ = frequencies[idx_dominant_frequ]
+            
+            
+            frequencies, power_spectrum =  signal.welch(x_adap, 10000, window='hanning', nperseg=int(60000), scaling='spectrum')
+            
+            adap_ps_at_most_powerful_frequ = power_spectrum[:,idx_dominant_frequ]
+            adap_amp = np.sqrt(max(adap_ps_at_most_powerful_frequ))
+    
+            if adap_amp < 0.004:
+                LCEI = 1.0 #Excitation-Inhibition Limit Cycle (LCEI)
+            else:
+                LCaE = 1.0 #adaptation-driven Limit Cycle (LCaE)
+            
+        else:
+            domfrequ = False
+            adap_amp = 0
+            
+            
         result = {'max_exc': max_exc,
                   'min_exc': min_exc,
-                  'up_duration': up_dur,
-                  'down_duration': down_dur,
                   'oss': oss_general,
-                  'dominant_frequency': dominant_frequency,
+                  'dominant_frequency': domfrequ,
                   'adaptation_amplitude': adap_amp,
                   'bistability': bistab,
                   'LCEI': LCEI,
                   'LCaE': LCaE,}
         
+        #safe result dictionary to a table in a hdf-file in the directory 'traj'
         self.search.saveToPypet(result, traj)
-    
+        
     
     
     def deriveOne(self, traj):
         paras = self.search.getParametersFromTraj(traj)
-        
+    
         self.model.params['exc_ext'] = paras['exc_ext']
         self.model.params['inh_ext'] = paras['inh_ext']
         
@@ -384,7 +407,7 @@ class Derivations:
         if bistab:
             self.model.params['exc_init'] =  f_pts[0][0] * np.random.uniform(1, 1, (self.model.params.N, 1))
             self.model.params['inh_init'] =  f_pts[0][1] * np.random.uniform(1, 1, (self.model.params.N, 1))
-            self.model.params['adap_init'] =  self.model.params.a_adap * fp.S_A(f_pts[0][0]) * np.random.uniform(1, 1, (self.model.params.N, 1))
+            self.model.params['adap_init'] =  self.model.params.a_adap * fp.S_A(f_pts[0][0]) * np.random.uniform(1, 1, (wc.params.N, 1))
         else:
             self.model.params['exc_init'] =  0.05 * np.random.uniform(0, 1, (self.model.params.N, 1))
             self.model.params['inh_init'] =  0.05 * np.random.uniform(0, 1, (self.model.params.N, 1))
@@ -393,17 +416,15 @@ class Derivations:
         self.model.run()
         
         #for the bifurcations in the one node-model: maximal and minimal activity-value in last second of the first node
-        max_exc = np.max(self.model.exc[0, -int(1000/self.model.params['dt']):])
-        max_inh = np.max(self.model.inh[0, -int(1000/self.model.params['dt']):])
-        min_exc = np.min(self.model.exc[0, -int(1000/self.model.params['dt']):])
-        min_inh = np.min(self.model.inh[0, -int(1000/self.model.params['dt']):])
+        max_exc = np.max(self.model.exc[0, -int(5000/self.model.params['dt']):])
+        max_inh = np.max(self.model.inh[0, -int(5000/self.model.params['dt']):])
         
         exc_act = self.model.exc
         inh_act = self.model.inh
         adap_act = self.model.adap
         
-        duration = self.model.params.duration/self.model.params.dt
-        cut_off = int(duration - 10*10000)
+        duration = self.model.params.duration/wc.params.dt
+        cut_off = int(duration - 60*10000)
         
         x = exc_act[0, -cut_off:]
         x_adap = adap_act[0, -cut_off:]
@@ -413,16 +434,26 @@ class Derivations:
         LCEI = 0
         LCaE = 0
         
-        ### Compute frequencies ###
+        if oss:
+            frequencies, power_spectral_density =  signal.welch(x, 10000, window='hanning', nperseg=int(60000), scaling='spectrum')
+            idx_dominant_frequ = np.argmax(power_spectral_density)
+            dominant_frequency = frequencies[idx_dominant_frequ]
             
-        ### Compute state durations ###
-        
+            frequencies, power_spectral_density =  signal.welch(x_adap, 10000, window='hanning', nperseg=int(60000), scaling='spectrum')
+            adap_amp = np.sqrt(max(power_spectral_density))
+            if adap_amp < 0.004:
+                LCEI = 1.0 #Excitation-Inhibition Limit Cycle (LCEI)
+            else:
+                LCaE = 1.0 #adaptation-driven Limit Cycle (LCaE)
             
+        else:
+            dominant_frequency = False
+            adap_amp = 0
+            
+        #Compute state durations, but cut off the first 2 seconds: 
         
         result = {'max_exc': max_exc,
                   'min_exc': min_exc,
-                  'up_duration': up_dur,
-                  'down_duration': down_dur,
                   'oss': oss,
                   'dominant_frequency': dominant_frequency,
                   'adaptation_amplitude': adap_amp,
