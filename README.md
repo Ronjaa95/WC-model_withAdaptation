@@ -3,4 +3,6 @@ In this framework, the neurolib-repository by https://github.com/neurolib-dev/ne
 
 The additional provided notebooks are visualizations and computations of the data acqusition on slow oscillations. The python-sripts are the derivation functions, to gather certain aspects of the model. They provide nullcline-, and fixed point derivations for the single node model (linear stability analysis), as well as a bistability analysis on the whole-brain-network (numerical stability analysis) for which another model in the neurolib/neurolib/models/-directory can be found, named 'wc_input'. It adds a step current at two time points (choosable). The DataFrame computation functions are only templates, on how to initialize such a derivation.
 
-Documentation of theoretical background and output/results of the system in a master's thesis: 'The Wilson-Cowan model with adaptation as a simplified model for slow oscialltions', at the Technische Universität Berlin.
+Documentation of theoretical background and output/results of the system in a master's thesis: 'The Wilson-Cowan model with adaptation as a simplified model for slow oscillations', at the Technische Universität Berlin.
+
+Connectivity matrices (strength and structural) are contained in neurolib/schaeffer_matrices.
