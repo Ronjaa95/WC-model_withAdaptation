@@ -1,0 +1,2 @@
+Cmat.mat contains matrices C for the Connectome using the Schaeffer Parcellation for N = 100, 200, 500 nodes. Load mat-file and use key='%i' %N of nodes to extract list of NxN-dimensional array.
+Dmat.mat contains structural connectivity - loading for N = 100, 200, 500 nodes as for Cmat.
